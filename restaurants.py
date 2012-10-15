@@ -19,22 +19,42 @@ paragraphInput = "WRITTEN REVIEW"
 testData = "./test/"
 trainData = "./training/"
 
+adjectives = ['JJ','JJR','JJS']
+adverbs = ['WRB','RB','RBR','RBS']
 
 def main():
    reviews = getTrainData()
    paras = getAllParagraphs(reviews)
    run_tests(paras)
 
-def trigramFeature(trigram):
-   return {'trigram': trigram}
+def dontcare():
+   return random.randint(-1000000,100000000)
+
+def POS_word(taggedword, POSs):
+   if(taggedword[1] in POSs):
+      return taggedword[0]
+   else:
+      return dontcare()
+
+def POS_tuple(trigram, POSs):
+   if(trigram[0][1] in POSs):
+      return ' '.join([trigram[0][0],trigram[1][0]])
+   else:
+      return dontcare()
+
+def trigramFeatures(trigram):
+   return {'adjective':POS_word(trigram[0], adjectives), 
+           #'adverb':POS_word(trigram[0], adverbs),
+           #'adjective_t':  POS_tuple(trigram, adjectives), 
+           'adverb_t': POS_tuple(trigram, adverbs)} #'trigram': ' '.join([trigram[0][0],trigram[1][0],trigram[2][0]]), 
 
 def langFeature(pos):
-   return {'unigram': pos[0], 'pos': pos[1]}
+   return {'adjective':POS_word(pos,adjectives), 'adverb':POS_word(pos,adverbs)} #'unigram': pos[0], 'pos': pos[1], 
 
 def get_featureSets(data):
-   word_features = [(langFeature(pos), r) for (r, p) in data for pos in nltk.pos_tag(nltk.word_tokenize(p)) if len(pos[0]) > 3]
-   # trigrams = [(trigramFeature(tri), r) for (r, p) in data for tri in nltk.word_tokenize(p)]
-   return word_features
+   #featureSets = [(trigramFeatures(tri), r) for (r, p) in data for tri in nltk.trigrams(nltk.pos_tag(nltk.word_tokenize(p)))]
+   featureSets = [(langFeature(pos), r) for (r, p) in data for pos in nltk.pos_tag(nltk.word_tokenize(p)) if len(pos[0]) > 3]
+   return featureSets
 
 def run_tests(data):
    featureSets = get_featureSets(data) # data format: (rating, paragraph)
