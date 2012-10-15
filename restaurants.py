@@ -1,14 +1,14 @@
-import operator,nltk
+import nltk
 
-def langFeatures(paragraph):
-   words = paragraph.split()
-   return {'first_word':words[0]}
+def langFeatures(trigram):
+   return {'word':trigram[0], 'trigram':trigram}
 
 def get_featureSets(data):
-   return featureSets = [(langFeatures(p),rating) for (rating,p) in data]
-
-def trained_classifier(featureSets):  
-   return nltk.NaiveBayesClassifier.train(train)
+   featureSets = []
+   for (rating,paragraph) in data:
+      for trigram in nltk.trigams(nltk.word_tokenize(paragraph))
+         featureSets.append((langFeatures(trigram),rating))
+   return featureSets
 
 def run_tests(data):
    featureSets = get_featureSets(data)
@@ -26,6 +26,5 @@ def classify_input(data):
    featureSets = get_featureSets(data)
    classifier = nltk.NaiveBayesClassifier.train(featureSets)
    
-   print "Rating: ", classifier.classify(langFeatures(text))
-
-
+   for trigram in nltk.trigams(nltk.word_tokenize(text))
+      print "Rating: ", classifier.classify(langFeatures(trigram))
