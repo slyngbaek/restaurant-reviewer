@@ -9,9 +9,6 @@ Rratings = "RATINGS"
 Rparagraphs = "PARAGRAPHS"
 Rfname = "FILENAME"
 
-#use POS Tagging
-usePOSTags = True
-
 #Input Data
 dataInputs = Rauthor, Rname, Raddress, Rcity
 ratingInputs = "FOOD", "SERVICE", "VENUE", "RATING", "OVERALL"
@@ -57,10 +54,7 @@ def parseReview(path, fname) :
       line = stripHTML(line).strip()
       temp = [split.strip() for split in line.split(":", 1)]
       if readingParasFlag and len(line) > 0 :
-         if usePOSTags:
-            paras.append(nltk.pos_tag(nltk.word_tokenize(line)))
-         else :
-            paras.append( [ (word, ) for word in nltk.word_tokenize(line)] ) 
+            paras.append(nltk.word_tokenize(line)) 
       elif temp[0] == paragraphInput :
          readingParasFlag = True
       elif temp[0] in dataInputs :

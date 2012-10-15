@@ -1,24 +1,23 @@
-import random, nltk, parser
+import random, nltk, parser, classifiers
 from parser import *
+from classifiers import *
 
 #Number of folds
 folds = 4
 
-adjectives = ['JJ','JJR','JJS']
-adverbs = ['WRB','RB','RBR','RBS']
+#adjectives = ['JJ','JJR','JJS']
+#adverbs = ['WRB','RB','RBR','RBS']
 
 def main():
    reviews = splitReviews(getTrainData())
 
-   for i in range(folds) : 
+   for i in range(folds):
       test = reviews[i]
       train = []
-      for j in range(folds) :
-         if i != j :
+      for j in range(folds):
+         if i != j:
             train.extend(reviews[j])
-      run_tests(getAllParagraphs(train), getAllParagraphs(test))
-
-   
+      classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))
 
 def splitReviews(reviews):
    random.shuffle(reviews)
@@ -31,54 +30,22 @@ def splitReviews(reviews):
    return splitRevs
 
 
-def dontcare():
-   return random.randint(-1000000,100000000)
+def classifyParagraph(p, classifier):
+   rating = 0
+   for word in p:
+      rating += classifier.classify(unigramFeatures(word))
+   return rating/len(p)
 
-def POS_word(taggedword, POSs):
-   if(taggedword[1] in POSs):
-      return taggedword[0]
-   else:
-      return dontcare()
+def classifyParagraphs(testData, trainingData):
+   print 'Training classifier'
+   classifier = unigramClassifier(trainingData)
+   total = 0
 
-def POS_tuple(trigram, POSs):
-   if(trigram[0][1] in POSs):
-      return ' '.join([trigram[0][0],trigram[1][0]])
-   else:
-      return dontcare()
-
-def trigramFeatures(trigram):
-   return {'adjective':POS_word(trigram[0], adjectives), 
-           #'adverb':POS_word(trigram[0], adverbs),
-           #'adjective_t':  POS_tuple(trigram, adjectives), 
-           'adverb_t': POS_tuple(trigram, adverbs)} #'trigram': ' '.join([trigram[0][0],trigram[1][0],trigram[2][0]]), 
-
-def langFeature(pos):
-   if usePOSTags :
-      return {'adjective':POS_word(pos,adjectives), 'adverb':POS_word(pos,adverbs)} #'unigram': pos[0], 'pos': pos[1], 
-   else :
-      return {'unigram' : pos[0]}
-
-def get_featureSets(data):
-   #featureSets = [(trigramFeatures(tri), r) for (r, p) in data for tri in nltk.trigrams(nltk.pos_tag(nltk.word_tokenize(p)))]
-   featureSets = [(langFeature(pos), r) for (r, p) in data for pos in p if len(pos[0]) > 3]
-   return featureSets
-
-def run_tests(train, test):
-
-   print get_featureSets(train)[:5]
-
-   classifier = nltk.NaiveBayesClassifier.train(get_featureSets(train))
-   
-   print "Accuracy: ", nltk.classify.accuracy(classifier, get_featureSets(test))
-   classifier.show_most_informative_features(20)
-
-def classify_input(data):
-   paragraph = raw_input('Enter text: ') # Get input review paragraph
-   classifier = nltk.NaiveBayesClassifier.train(get_featureSets(data))
-   feature_set = [trigramFeature(tri) for tri in nltk.trigrams(nltk.word_tokenize(paragraph))]
-   print "Rating: ", nltk.classifier.classify(classifier, feature_set)
-
-
+   for (r, p) in testData:
+      rating = classifyParagraph(p, classifier)
+      print 'Rating: ', rating
+      total += rating
+      #TODO calculate root mean square error
 
 if __name__ == '__main__':
    main()
