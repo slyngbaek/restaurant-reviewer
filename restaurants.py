@@ -14,6 +14,9 @@ Rfname = "FILENAME"
 #Number of folds
 folds = 4
 
+#use POS Tagging
+usePOSTags = True
+
 #Input Data
 dataInputs = Rauthor, Rname, Raddress, Rcity
 ratingInputs = "FOOD", "SERVICE", "VENUE", "RATING", "OVERALL"
@@ -28,6 +31,14 @@ adverbs = ['WRB','RB','RBR','RBS']
 def main():
    reviews = splitReviews(getTrainData())
 
+   for i in range(folds) : 
+      test = reviews[i]
+      train = []
+      for j in range(folds) :
+         if i != j :
+            train.extend(reviews[j])
+      run_tests(getAllParagraphs(train), getAllParagraphs(test))
+
    
 
 def splitReviews(reviews):
@@ -37,6 +48,8 @@ def splitReviews(reviews):
    for i in range(folds - 1) :
       splitRevs.append(reviews[i * size : size * (i + 1)])
    splitRevs.append(reviews[size * (folds - 1):])
+
+   return splitRevs
 
 
 def dontcare():
@@ -61,23 +74,23 @@ def trigramFeatures(trigram):
            'adverb_t': POS_tuple(trigram, adverbs)} #'trigram': ' '.join([trigram[0][0],trigram[1][0],trigram[2][0]]), 
 
 def langFeature(pos):
-   return {'adjective':POS_word(pos,adjectives), 'adverb':POS_word(pos,adverbs)} #'unigram': pos[0], 'pos': pos[1], 
+   if usePOSTags :
+      return {'adjective':POS_word(pos,adjectives), 'adverb':POS_word(pos,adverbs)} #'unigram': pos[0], 'pos': pos[1], 
+   else :
+      return {'unigram' : pos[0]}
 
 def get_featureSets(data):
    #featureSets = [(trigramFeatures(tri), r) for (r, p) in data for tri in nltk.trigrams(nltk.pos_tag(nltk.word_tokenize(p)))]
-   featureSets = [(langFeature(pos), r) for (r, p) in data for pos in nltk.pos_tag(nltk.word_tokenize(p)) if len(pos[0]) > 3]
+   featureSets = [(langFeature(pos), r) for (r, p) in data for pos in p if len(pos[0]) > 3]
    return featureSets
 
-def run_tests(data):
-   featureSets = get_featureSets(data) # data format: (rating, paragraph)
-   random.shuffle(featureSets) # Shuffle the feature sets
+def run_tests(train, test):
 
-   split = len(featureSets)*4/5
-   train, test = featureSets[:split], featureSets[split:]
+   print get_featureSets(train)[:5]
 
-   classifier = nltk.NaiveBayesClassifier.train(train)
+   classifier = nltk.NaiveBayesClassifier.train(get_featureSets(train))
    
-   print "Accuracy: ", nltk.classify.accuracy(classifier,test)
+   print "Accuracy: ", nltk.classify.accuracy(classifier, get_featureSets(test))
    classifier.show_most_informative_features(20)
 
 def classify_input(data):
@@ -123,7 +136,10 @@ def parseReview(path, fname) :
       line = stripHTML(line).strip()
       temp = [split.strip() for split in line.split(":", 1)]
       if readingParasFlag and len(line) > 0 :
-         paras.append(nltk.pos_tag(nltk.word_tokenize(line)))
+         if usePOSTags:
+            paras.append(nltk.pos_tag(nltk.word_tokenize(line)))
+         else :
+            paras.append( [ (word, ) for word in nltk.word_tokenize(line)] ) 
       elif temp[0] == paragraphInput :
          readingParasFlag = True
       elif temp[0] in dataInputs :
