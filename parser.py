@@ -17,32 +17,32 @@ paragraphInput = "WRITTEN REVIEW"
 testData = "./test/"
 trainData = "./training/"
 
-def getTrainData() :
+def getTrainData():
    reviews = []
    for fname in os.listdir(trainData):
-      if fname.endswith('.html') :
+      if fname.endswith('.html'):
          reviews.append(parseReview(trainData, fname))
 
    return reviews
 
-def getAllParagraphs(reviews) :
+def getAllParagraphs(reviews):
    paras = []
-   for review in reviews :
-      for i in range(len(review[Rparagraphs])) :
+   for review in reviews:
+      for i in range(len(review[Rparagraphs])):
          paras.append( (review[Rratings][i], review[Rparagraphs][i]) )
 
    return paras
 
-def getAllAuthors(reviews) :
+def getAllAuthors(reviews):
    authors = []
-   for review in reviews :
+   for review in reviews:
       authors.append( (review[Rauthor], review[Rparagraphs]) )
 
    print authors
    return authors
 
 
-def parseReview(path, fname) :
+def parseReview(path, fname):
 
    review = {}
    rating = []
@@ -50,16 +50,16 @@ def parseReview(path, fname) :
 
    fp = open(path + fname, 'r')
    readingParasFlag = False
-   for line in fp.readlines() :
+   for line in fp.readlines():
       line = stripHTML(line).strip()
       temp = [split.strip() for split in line.split(":", 1)]
-      if readingParasFlag and len(line) > 0 :
+      if readingParasFlag and len(line) > 0:
             paras.append(nltk.word_tokenize(line)) 
-      elif temp[0] == paragraphInput :
+      elif temp[0] == paragraphInput:
          readingParasFlag = True
-      elif temp[0] in dataInputs :
+      elif temp[0] in dataInputs:
          review[temp[0]] = temp[1]
-      elif temp[0] in ratingInputs :
+      elif temp[0] in ratingInputs:
          rating.append(int(temp[1]))
 
    fp.close()
@@ -72,27 +72,29 @@ def parseReview(path, fname) :
 
    return review
 
-def checkReview(review) :
-   if len(review.keys()) != 7 :
+def checkReview(review):
+   if len(review.keys()) != 7:
       print "   Expected 7 keys, got " + str(len(review.keys()))
-   if len(review[Rratings]) != 4 :
+   if len(review[Rratings]) != 4:
       print "   Expected 4 ratings, got " + str(len(review[Rratings]))
-   if len(review[Rparagraphs]) != 4 :
+   if len(review[Rparagraphs]) != 4:
       print "   Expected 4 paragraphs, got " + str(len(review[Rparagraphs]))
 
-def printReview(review) :
+def printReview(review):
    #Print metadata
-   for key, value in review.items() :
+   for key, value in review.items():
       if key != paragraphs:
-         print "'" + key + "' : '" + str(value) + "'"
+         print "'" + key + "': '" + str(value) + "'"
    #Print paragraphs      
-   for line in review[paragraphs] :
+   for line in review[paragraphs]:
       print "-----"
       print line
    print "-----"
       
 
-def stripHTML(text) :
+def stripHTML(text):
+   # nltk has a clean HTML method
+   # nltk.util.clean_html(html)
    newText = re.sub("<.*?>", " ", text)
    newText = re.sub("\xc2\xa0", " ", newText) #remove &nbsp;
    return newText
