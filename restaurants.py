@@ -11,6 +11,9 @@ Rratings = "RATINGS"
 Rparagraphs = "PARAGRAPHS"
 Rfname = "FILENAME"
 
+#Number of folds
+folds = 4
+
 #Input Data
 dataInputs = Rauthor, Rname, Raddress, Rcity
 ratingInputs = "FOOD", "SERVICE", "VENUE", "RATING", "OVERALL"
@@ -23,9 +26,18 @@ adjectives = ['JJ','JJR','JJS']
 adverbs = ['WRB','RB','RBR','RBS']
 
 def main():
-   reviews = getTrainData()
-   paras = getAllParagraphs(reviews)
-   run_tests(paras)
+   reviews = splitReviews(getTrainData())
+
+   
+
+def splitReviews(reviews):
+   random.shuffle(reviews)
+   size = len(reviews) / folds
+   splitRevs = []
+   for i in range(folds - 1) :
+      splitRevs.append(reviews[i * size : size * (i + 1)])
+   splitRevs.append(reviews[size * (folds - 1):])
+
 
 def dontcare():
    return random.randint(-1000000,100000000)
@@ -111,7 +123,7 @@ def parseReview(path, fname) :
       line = stripHTML(line).strip()
       temp = [split.strip() for split in line.split(":", 1)]
       if readingParasFlag and len(line) > 0 :
-         paras.append(line)
+         paras.append(nltk.pos_tag(nltk.word_tokenize(line)))
       elif temp[0] == paragraphInput :
          readingParasFlag = True
       elif temp[0] in dataInputs :
