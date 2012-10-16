@@ -62,7 +62,7 @@ def splitReviews(reviews):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
+   classifier = ParagraphClassifier(trainingData) #UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
    total = 0.0
 
    for (r, p) in testData:
@@ -71,8 +71,10 @@ def classifyParagraphs(testData, trainingData):
       total += (rating - r) * (rating - r)
       #TODO calculate root mean square error
 
+   print 'Accuracy: ', classifier.accuracy(testData)
+   print classifier.most_informative_features()
    rms = math.sqrt(total / float(len(testData)))
-   print "RMS error: " + str(rms)
+   print "RMS error: ", rms, '\n'
 
 if __name__ == '__main__':
    main()
