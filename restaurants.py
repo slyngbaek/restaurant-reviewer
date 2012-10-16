@@ -1,4 +1,5 @@
 import random, nltk, parser, classifiers
+import math
 from parser import *
 from classifiers import *
 
@@ -9,15 +10,45 @@ folds = 4
 #adverbs = ['WRB','RB','RBR','RBS']
 
 def main():
-   reviews = splitReviews(getTrainData())
 
+   print "Starting classifier ..."
+   data = getTrainData()
+
+
+   for N in range(1,2) :
+      doExercise(N, data)
+
+
+def doExercise(N, data):
+   print "Exercise " + str(N) + " validation"
    for i in range(folds):
+      reviews = splitReviews(data)
       test = reviews[i]
-      train = []
-      for j in range(folds):
-         if i != j:
-            train.extend(reviews[j])
-      classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))
+      train = [r for j in range(folds) for r in reviews[j] if i != j]
+      printValidationSet(i, test)
+      print "Len: " + str(len(test))
+      if N == 1 :
+         exercise1(test, train)
+      elif N == 2 :
+         exercise2(test, train)
+      elif N == 3 :
+         exercise3(test, train)
+      else:
+         print "Error! bad exercise"
+
+def exercise1(test, train):
+
+   classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))
+
+def exercise2(test, train):
+   pass
+
+def exercise3(test, train):
+   pass
+
+def printValidationSet(i, reviews):
+   fnames = [r.filename for r in reviews]
+   print "Random Validation Set " + str(i) + ": " + str(fnames)
 
 def splitReviews(reviews):
    random.shuffle(reviews)
@@ -32,13 +63,42 @@ def splitReviews(reviews):
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
    classifier = UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
-   total = 0
+   total = 0.0
 
    for (r, p) in testData:
       rating = classifier.classifyParagraph(p)
-      print 'Rating: ', rating
-      total += rating
+      ##print str(r) + " : " + str(rating)
+      total += (rating - r) * (rating - r)
       #TODO calculate root mean square error
+
+   rms = math.sqrt(total / float(len(testData)))
+   print "RMS error: " + str(rms)
 
 if __name__ == '__main__':
    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

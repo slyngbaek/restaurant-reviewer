@@ -37,32 +37,30 @@ class Review(object):
 
 def getTrainData():
    reviews = []
+   count = 0
    for fname in os.listdir(trainData):
       if fname.endswith('.html'):
-         #reviews.extend(parseReview(trainData, fname))
+         count += 1
+         reviews.extend(parseReview(trainData, fname))
 
-         curr = parseReview(trainData, fname)
-         for r in curr: 
-            r.printReview()
-            print ""
-         reviews.extend(curr)
+   print "   " + str(count) + " training documents found"
+   print "   " + str(len(reviews)) + " reviews digitized"
 
    return reviews
 
 def getAllParagraphs(reviews):
    paras = []
    for review in reviews:
-      for i in range(len(review[Rparagraphs])):
-         paras.append( (review[Rratings][i], review[Rparagraphs][i]) )
+      for i in range(len(review.paragraphs)):
+         paras.append( (review.ratings[i], review.paragraphs[i]) )
 
    return paras
 
 def getAllAuthors(reviews):
    authors = []
    for review in reviews:
-      authors.append( (review[Rauthor], review[Rparagraphs]) )
+      authors.append( (review.reviewer, review.paragraphs) )
 
-   print authors
    return authors
 
 
@@ -85,7 +83,7 @@ def parseReview(path, fname):
       if readingParasFlag and len(line) > 0:
          r.paragraphs.append(nltk.word_tokenize(line))
          if len(r.paragraphs) == 4:
-            #Next Review
+            #Next Review, Hack
             readingParasFlag = False
             reviews.append(r)
             r = Review()
@@ -96,7 +94,7 @@ def parseReview(path, fname):
       elif field[0] in ratingInputs:
          r.ratings.append(int(field[1]))
    
-   #Set Filenames (add -1, -2 etc)
+   #Set Filenames (add -1, -2 etc if needed)
    if len(reviews) == 1:
       reviews[0].filename = fname
    else:
@@ -105,16 +103,7 @@ def parseReview(path, fname):
 
 
    fp.close()
-   #checkReview(r)
    return reviews
-
-def checkReview(review):
-   if len(review.keys()) != 7:
-      print "   Expected 7 keys, got " + str(len(review.keys()))
-   if len(review[Rratings]) != 4:
-      print "   Expected 4 ratings, got " + str(len(review[Rratings]))
-   if len(review[Rparagraphs]) != 4:
-      print "   Expected 4 paragraphs, got " + str(len(review[Rparagraphs]))
 
 def stripHTML(text):
    minlines = 12
