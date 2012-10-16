@@ -21,8 +21,8 @@ def main():
 
 def doExercise(N, data):
    print "Exercise " + str(N) + " validation"
-   for i in range(folds):
-      reviews = splitReviews(data)
+   reviews = splitReviews(data)
+   for i in range(folds): 
       test = reviews[i]
       train = [r for j in range(folds) for r in reviews[j] if i != j]
       printValidationSet(i, test)
