@@ -29,20 +29,13 @@ def splitReviews(reviews):
 
    return splitRevs
 
-
-def classifyParagraph(p, classifier):
-   rating = 0
-   for word in p:
-      rating += classifier.classify(unigramFeatures(word))
-   return rating/len(p)
-
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = unigramClassifier(trainingData)
+   classifier = UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
    total = 0
 
    for (r, p) in testData:
-      rating = classifyParagraph(p, classifier)
+      rating = classifier.classifyParagraph(p)
       print 'Rating: ', rating
       total += rating
       #TODO calculate root mean square error
