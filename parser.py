@@ -1,27 +1,51 @@
 import nltk, os, re
 
-#Review Data Structure items
-Rauthor = "REVIEWER"
-Rname = "NAME"
-Raddress = "ADDRESS"
-Rcity = "CITY"
-Rratings = "RATINGS"
-Rparagraphs = "PARAGRAPHS"
-Rfname = "FILENAME"
-
-#Input Data
-dataInputs = Rauthor, Rname, Raddress, Rcity
-ratingInputs = "FOOD", "SERVICE", "VENUE", "RATING", "OVERALL"
-paragraphInput = "WRITTEN REVIEW"
-
 testData = "./test/"
 trainData = "./training/"
+
+class Review(object):
+   """A user review"""
+   """def __init__(self, reviewer, name, address, city, ratings, paragraphs, filename):
+      super(Review, self).__init__()
+      self.reviewer = reviewer
+      self.name = name
+      self.address = address
+      self.city = city
+      self.ratings = ratings
+      self.paragraphs = paragraphs
+      self.filename = filename"""
+   def __init__(self):
+      super(Review, self).__init__()
+      self.ratings = []
+      self.paragraphs = []
+
+
+   # Fix this shit
+   def printReview(self):
+      #Print metadata
+      print "Filename   : " + self.filename
+      print "Name       : " + self.name
+      print "Address    : " + self.address
+      print "City       : " + self.city
+      print "Reviewer   : " + self.reviewer
+      print "Ratings    : " + str(self.ratings)
+      #Print paragraphs      
+      for line in self.paragraphs:
+         print "-----"
+         print line
+      print "-----"
 
 def getTrainData():
    reviews = []
    for fname in os.listdir(trainData):
       if fname.endswith('.html'):
-         reviews.append(parseReview(trainData, fname))
+         #reviews.extend(parseReview(trainData, fname))
+
+         curr = parseReview(trainData, fname)
+         for r in curr: 
+            r.printReview()
+            print ""
+         reviews.extend(curr)
 
    return reviews
 
@@ -43,34 +67,46 @@ def getAllAuthors(reviews):
 
 
 def parseReview(path, fname):
+   #Input Data
+   dataInputs = "REVIEWER", "NAME", "ADDRESS", "CITY"
+   ratingInputs = "FOOD", "SERVICE", "VENUE", "RATING", "OVERALL"
+   paragraphInput = "WRITTEN REVIEW"
 
-   review = {}
-   rating = []
-   paras = []
-
+   reviews = []
    fp = open(path + fname, 'r')
+
+   r = Review()
    readingParasFlag = False
-   for line in fp.readlines():
-      line = stripHTML(line).strip()
-      temp = [split.strip() for split in line.split(":", 1)]
+
+   lines = stripHTML(fp.read())
+   for line in lines:
+      line = line.strip()
+      field = [split.strip() for split in line.split(":", 1)]
       if readingParasFlag and len(line) > 0:
-            paras.append(nltk.word_tokenize(line)) 
-      elif temp[0] == paragraphInput:
+         r.paragraphs.append(nltk.word_tokenize(line))
+         if len(r.paragraphs) == 4:
+            #Next Review
+            readingParasFlag = False
+            reviews.append(r)
+            r = Review()
+      elif field[0] == paragraphInput:
          readingParasFlag = True
-      elif temp[0] in dataInputs:
-         review[temp[0]] = temp[1]
-      elif temp[0] in ratingInputs:
-         rating.append(int(temp[1]))
+      elif field[0] in dataInputs:
+         setattr(r, field[0].lower(), field[1])
+      elif field[0] in ratingInputs:
+         r.ratings.append(int(field[1]))
+   
+   #Set Filenames (add -1, -2 etc)
+   if len(reviews) == 1:
+      reviews[0].filename = fname
+   else:
+      for i, r in enumerate(reviews):
+         r.filename = fname + "-" + str(i + 1)
+
 
    fp.close()
-
-   review[Rfname] = fname
-   review[Rparagraphs] = paras
-   review[Rratings] = rating
-
-   checkReview(review)
-
-   return review
+   #checkReview(r)
+   return reviews
 
 def checkReview(review):
    if len(review.keys()) != 7:
@@ -80,21 +116,47 @@ def checkReview(review):
    if len(review[Rparagraphs]) != 4:
       print "   Expected 4 paragraphs, got " + str(len(review[Rparagraphs]))
 
-def printReview(review):
-   #Print metadata
-   for key, value in review.items():
-      if key != paragraphs:
-         print "'" + key + "': '" + str(value) + "'"
-   #Print paragraphs      
-   for line in review[paragraphs]:
-      print "-----"
-      print line
-   print "-----"
-      
-
 def stripHTML(text):
-   # nltk has a clean HTML method
-   # nltk.util.clean_html(html)
+   minlines = 12
+
+   #remove &nbsp;
+   text = re.sub("\xc2\xa0", " ", text) 
+
+   #Try just removing them
    newText = re.sub("<.*?>", " ", text)
-   newText = re.sub("\xc2\xa0", " ", newText) #remove &nbsp;
-   return newText
+   lines = newText.splitlines()
+   if len(lines) >= minlines :
+      return lines
+
+   #Try making double <br /> into newlines
+   newText = re.sub("(<\s*br\s*/>){2}", "\n", text)
+   newText = re.sub("<.*?>", " ", newText)
+   lines = newText.splitlines()
+   if len(lines) >= minlines :
+      return lines
+
+   #Make them all newlines instead.
+   newText = re.sub("<.*?>", "\n", text)
+   lines = newText.splitlines()
+   
+   return lines
+
+if __name__ == '__main__':
+   main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
