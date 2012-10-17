@@ -57,12 +57,13 @@ def getAllParagraphs(reviews):
    return paras
 
 def getAllAuthors(reviews):
-   authors = []
+   authors = {}
    for review in reviews:
-      authors.append( (review.reviewer, review.paragraphs) )
-
+      if review.reviewer in authors:
+         authors[review.reviewer].append(review.paragraphs)
+      else:
+         authors[review.reviewer] = [review.paragraphs]
    return authors
-
 
 def parseReview(path, fname):
    #Input Data
@@ -132,20 +133,3 @@ def stripHTML(text):
 
 if __name__ == '__main__':
    main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-import nltk, collections
+import nltk, collections, re
 
 adjectiveTags = ['JJ','JJR','JJS']
 adverbTags = ['WRB','RB','RBR','RBS']
@@ -199,14 +199,14 @@ class ParagraphClassifier(object):
       #       fs[w] = 1
       # return fs #{'first word':paragraph[0]}
 
-   class CharacterNgramClassifier(object):
+class CharacterNgramClassifier(object):
    """Paragraph Classifier - accepts data in the (rating, list of words) format"""
-   def __init__(self, data):
-      self.featureSets = CharacterNgramClassifier.featureSets(data)
+   def __init__(self, authors):
+      self.featureSets = CharacterNgramClassifier.featureSets(authors)
       self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
 
    def classify(self, paragraph):
-      return self.classifier.classify(CharacterNgramClassifier.features(paragraph))
+      pass
 
    def classifyParagraph(self, p):
       return self.classify(p)
@@ -218,8 +218,31 @@ class ParagraphClassifier(object):
       return nltk.classify.accuracy(self.classifier, CharacterNgramClassifier.featureSets(test))
 
    @staticmethod
-   def featureSets(data): #data accepted as (rating, list of words)
-      return [(CharacterNgramClassifier.features(words), r) for (r, words) in data]
+   def __getAuthorProfiles(authors):
+      author_list = {}
+      for author in authors:
+         tris = []
+         for r in authors[author]:
+            for p in r:
+               tris.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
+         tris = ["".join(t) for t in tris]
+         author_list[author] = tris
+
+      return {k: CharacterNgramClassifier.__getNormalizedTrigramFreq(v) for (k, v) in author_list.iteritems()}
+
+   @staticmethod
+   def __getNormalizedTrigramFreq(trigams):
+      tri_dict = {}
+      for t in trigams:
+         tri_dict[t] = tri_dict.get(t, 0) + 1
+      return {t: 0 for t in tri_dict}
+      return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}
+
+   @staticmethod
+   def featureSets(authors): #data accepted as (rating, list of words)
+      authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
+      # print [(v, k) for (k, v) in authorProfiles.iteritems()]
+      return [(v, k) for (k, v) in authorProfiles.iteritems()]
 
    @staticmethod
    def features(paragraph):

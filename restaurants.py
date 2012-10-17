@@ -7,14 +7,11 @@ from classifiers import *
 folds = 4
 
 def main():
-
    print "Starting classifier ..."
    data = getTrainData()
 
-
-   for N in range(1,2) :
+   for N in range(3, 4) :
       doExercise(N, data)
-
 
 def doExercise(N, data):
    print "Exercise " + str(N) + " validation"
@@ -34,14 +31,13 @@ def doExercise(N, data):
          print "Error! bad exercise"
 
 def exercise1(test, train):
-
    classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))
 
 def exercise2(test, train):
    pass
 
 def exercise3(test, train):
-   pass
+   classifyAuthors(getAllAuthors(test), getAllAuthors(train))
 
 def printValidationSet(i, reviews):
    fnames = [r.filename for r in reviews]
@@ -56,6 +52,13 @@ def splitReviews(reviews):
    splitRevs.append(reviews[size * (folds - 1):])
 
    return splitRevs
+
+def classifyAuthors(testData, trainingData):
+   print 'Training Classifier'
+   classifier = CharacterNgramClassifier(trainingData)
+
+   print 'Accuracy: ', classifier.accuracy(testData)
+   classifier.most_informative_features()
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
@@ -75,29 +78,3 @@ def classifyParagraphs(testData, trainingData):
 
 if __name__ == '__main__':
    main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
