@@ -4,7 +4,8 @@ adjectiveTags = ['JJ','JJR','JJS']
 adverbTags = ['WRB','RB','RBR','RBS']
 comparativeTags = ['RBR','JJR']
 
-goodTags = [':','RBR','JJS','CC']
+goodTags = ['RBR','JJS','CC','JJR'] #':'
+goodWords = ['good','great','awesome','bad','less','more','better', 'food', 'waitress', 'grill', 'pretty', 'always', 'nice', 'quality', 'rather', 'quick', 'lot']
 
 def mostFrequent(words,n=1):
    if len(words) < 2:
@@ -78,10 +79,10 @@ class UnigramClassifier(object):
                count += 1 
       return float(rating)/count
 
-   def most_informative_features(self, n=20):
+   def most_informative_features(self, n=50):
       return self.classifier.show_most_informative_features(n)
 
-   def accuracy(self, test):
+   def accuracyByPOS(self, test):
       POS = {}
       for (r, words) in test:
          taggedwords = nltk.pos_tag(words)
@@ -99,13 +100,24 @@ class UnigramClassifier(object):
                POS[tag].append((r, pos[tag]))
 
       for tag in POS:
-         print tag+': ', nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(POS[tag]))
-      #return nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(test))
+         POS[tag] = nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(POS[tag]))
+
+      return POS
+
+   def accuracy(self, test):      
+      return nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(test))
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      return [(UnigramClassifier.features(word.lower()), r) for (r, words) in data for word in words
-                                                    if not isStopWord(word) and not isPunctuation(word)]
+      fs = [];
+      for (r, words) in data:
+         taggedWords = nltk.pos_tag(words)
+         fs.extend([(UnigramClassifier.features(word.lower()), r) for (word, tag) in taggedWords
+                                                    if tag in goodTags])
+      return fs
+
+      # return [(UnigramClassifier.features(word.lower()), r) for (r, words) in data for word in words
+      #                                               if not isStopWord(word) and not isPunctuation(word)]
 
    @staticmethod
    def features(word):
@@ -186,3 +198,30 @@ class ParagraphClassifier(object):
       #    if tag in adjectives:
       #       fs[w] = 1
       # return fs #{'first word':paragraph[0]}
+
+   class CharacterNgramClassifier(object):
+   """Paragraph Classifier - accepts data in the (rating, list of words) format"""
+   def __init__(self, data):
+      self.featureSets = CharacterNgramClassifier.featureSets(data)
+      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+
+   def classify(self, paragraph):
+      return self.classifier.classify(CharacterNgramClassifier.features(paragraph))
+
+   def classifyParagraph(self, p):
+      return self.classify(p)
+
+   def most_informative_features(self, n=20):
+      return self.classifier.show_most_informative_features(n)
+
+   def accuracy(self, test):
+      return nltk.classify.accuracy(self.classifier, CharacterNgramClassifier.featureSets(test))
+
+   @staticmethod
+   def featureSets(data): #data accepted as (rating, list of words)
+      return [(CharacterNgramClassifier.features(words), r) for (r, words) in data]
+
+   @staticmethod
+   def features(paragraph):
+      #for word in paragraph for letter in word
+      return {'feature': ' '}
