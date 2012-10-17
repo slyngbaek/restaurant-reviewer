@@ -6,9 +6,6 @@ from classifiers import *
 #Number of folds
 folds = 4
 
-#adjectives = ['JJ','JJR','JJS']
-#adverbs = ['WRB','RB','RBR','RBS']
-
 def main():
 
    print "Starting classifier ..."
@@ -62,7 +59,7 @@ def splitReviews(reviews):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = ParagraphClassifier(trainingData) #UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
+   classifier = UnigramClassifier(trainingData) #UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
    total = 0.0
 
    for (r, p) in testData:

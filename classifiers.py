@@ -1,10 +1,48 @@
 import nltk, collections
 
-def filterStopWords(words):
-   return [word.lower() for word in words if not word.lower() in nltk.corpus.stopwords.words('english')]
+adjectiveTags = ['JJ','JJR','JJS']
+adverbTags = ['WRB','RB','RBR','RBS']
+comparativeTags = ['RBR','JJR']
 
-def filterPunctuation(words):
-   return [w for w in words if not w[0] in ".,/?':;!"]
+goodTags = [':','RBR','JJS','CC']
+
+def mostFrequent(words,n=1):
+   if len(words) < 2:
+      return words
+   
+   counts = {}
+   for word in words:
+      if word in counts:
+         counts[word] += 1
+      else:
+         counts[word] = 1
+   
+   words = sorted(counts, key = counts.get, reverse = True)
+   if len(words) < n:
+      n = len(words)
+   return words[:n]
+
+def leastFrequent(words,n=1):
+   if len(words) < 2:
+      return words
+   
+   counts = {}
+   for word in words:
+      if word in counts:
+         counts[word] += 1
+      else:
+         counts[word] = 1
+   
+   words = sorted(counts, key = counts.get)
+   if len(words) < n:
+      n = len(words)
+   return words[:n]
+
+def isStopWord(word):
+   return word.lower() in nltk.corpus.stopwords.words('english')
+
+def isPunctuation(word):
+   return word[0] in ".,/?':;!$%"
 
 class UnigramClassifier(object):
    """Unigram Classifier - accepts data in the (rating, list of words) format"""
@@ -16,22 +54,58 @@ class UnigramClassifier(object):
       return self.classifier.classify(UnigramClassifier.features(word))
 
    def classifyParagraph(self, p):
-      #TODO remove stop-words
       rating = 0
-      for word in p:
-         rating += self.classifier.classify(UnigramClassifier.features(word))
-      return float(rating)/len(p)
+      count = 0
+      
+      if (0):
+         taggedWords = nltk.pos_tag(p)
+         for (word, tag) in taggedWords:
+            if not isStopWord(word) and not isPunctuation(word):
+               if (tag in comparativeTags):
+                  weight = 10
+               elif (tag in adjectiveTags):
+                  weight = 2
+               elif (tag in adverbTags):
+                  weight = 3
+               else:
+                  weight = 1
+               rating += weight*self.classifier.classify(UnigramClassifier.features(word))
+               count += weight 
+      else:
+         for word in p:
+            if not isStopWord(word) and not isPunctuation(word):
+               rating += 1*self.classifier.classify(UnigramClassifier.features(word))
+               count += 1 
+      return float(rating)/count
 
-   def most_informative_features(self, n=50):
-      return self.classifier.most_informative_features(n)
+   def most_informative_features(self, n=20):
+      return self.classifier.show_most_informative_features(n)
 
    def accuracy(self, test):
-      return nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(test))
+      POS = {}
+      for (r, words) in test:
+         taggedwords = nltk.pos_tag(words)
+         pos = {}
+         for (word, tag) in taggedwords:
+            if not tag in pos:
+               pos[tag] = [word]
+            else:
+               pos[tag].append(word)
+
+         for tag in pos:
+            if not tag in POS:
+               POS[tag] = [(r, pos[tag])]
+            else:
+               POS[tag].append((r, pos[tag]))
+
+      for tag in POS:
+         print tag+': ', nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(POS[tag]))
+      #return nltk.classify.accuracy(self.classifier, UnigramClassifier.featureSets(test))
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      #TODO remove stop-words
-      return [(UnigramClassifier.features(word), r) for (r, words) in data for word in words]
+      return [(UnigramClassifier.features(word.lower()), r) for (r, words) in data for word in words
+                                                    if not isStopWord(word) and not isPunctuation(word)]
 
    @staticmethod
    def features(word):
@@ -54,8 +128,8 @@ class BigramClassifier(object):
          rating += self.classifier.classify(BigramClassifier.features(bigram))
       return float(rating)/len(bigrams)
 
-   def most_informative_features(self, n=50):
-      return self.classifier.most_informative_features(n)
+   def most_informative_features(self, n=20):
+      return self.classifier.show_most_informative_features(n)
 
    def accuracy(self, test):
       return nltk.classify.accuracy(self.classifier, BigramClassifier.featureSets(test))
@@ -93,13 +167,22 @@ class ParagraphClassifier(object):
 
    @staticmethod
    def features(paragraph):
-      #TODO most freq word, least frequent etc.
-      words = filterStopWords(paragraph)
-      words = filterPunctuation(words)
-      return {'least frequent': min(set(words), key=words.count)}
-      
-      # fs = {}
-      # for w in words:
-      #    fs[w] = w
-      # return fs #{'first word':paragraph[0]}
+      words = [word for word in paragraph if not isStopWord(word) and not isPunctuation(word)]
+      # return {'least frequent': min(set(words), key=words.count)}
 
+      taggedlist = nltk.pos_tag(paragraph)
+      adjectives = [w for (w,tag) in taggedlist if tag in adjectiveTags or tag in adverbTags]
+      # mAds = leastFrequent(adjectives,10)
+      # fs = {}
+      # for i in range(len(mAds)):
+      #    fs[mAds[i]] = 1
+      # return fs
+      return {'frequent adjectives': ' '.join(mostFrequent(adjectives,2)), 
+              'infrequent adjective': leastFrequent(adjectives)[0], 
+              'least frequent':leastFrequent(words)[0],
+              'most frequent':mostFrequent(words)[0] }
+      # fs = {}
+      # for (w, tag) in taggedlist:
+      #    if tag in adjectives:
+      #       fs[w] = 1
+      # return fs #{'first word':paragraph[0]}
