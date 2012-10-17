@@ -1,49 +1,5 @@
-import nltk, collections, re
-
-adjectiveTags = ['JJ','JJR','JJS']
-adverbTags = ['WRB','RB','RBR','RBS']
-comparativeTags = ['RBR','JJR']
-
-goodTags = ['RBR','JJS','CC','JJR'] #':'
-goodWords = ['good','great','awesome','bad','less','more','better', 'food', 'waitress', 'grill', 'pretty', 'always', 'nice', 'quality', 'rather', 'quick', 'lot']
-
-def mostFrequent(words,n=1):
-   if len(words) < 2:
-      return words
-   
-   counts = {}
-   for word in words:
-      if word in counts:
-         counts[word] += 1
-      else:
-         counts[word] = 1
-   
-   words = sorted(counts, key = counts.get, reverse = True)
-   if len(words) < n:
-      n = len(words)
-   return words[:n]
-
-def leastFrequent(words,n=1):
-   if len(words) < 2:
-      return words
-   
-   counts = {}
-   for word in words:
-      if word in counts:
-         counts[word] += 1
-      else:
-         counts[word] = 1
-   
-   words = sorted(counts, key = counts.get)
-   if len(words) < n:
-      n = len(words)
-   return words[:n]
-
-def isStopWord(word):
-   return word.lower() in nltk.corpus.stopwords.words('english')
-
-def isPunctuation(word):
-   return word[0] in ".,/?':;!$%"
+import nltk, featureutils
+from featureutils import *
 
 class UnigramClassifier(object):
    """Unigram Classifier - accepts data in the (rating, list of words) format"""
@@ -109,19 +65,26 @@ class UnigramClassifier(object):
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      fs = [];
+      # fs = [];
+      # for (r, words) in data:
+      #    taggedWords = nltk.pos_tag(words)
+      #    fs.extend([(UnigramClassifier.features(word.lower()), r) for (word, tag) in taggedWords
+      #                                               if tag in goodTags])
+      # return fs
+
+      fs = []
       for (r, words) in data:
-         taggedWords = nltk.pos_tag(words)
-         fs.extend([(UnigramClassifier.features(word.lower()), r) for (word, tag) in taggedWords
-                                                    if tag in goodTags])
+         words = [stem(word.lower()) for word in words if not isStopWord(word) and not isPunctuation(word)]
+         words = leastFrequent(words, (len(words)*2)/10)
+         fs.extend([(UnigramClassifier.features(word), r) for word in words[:]])
       return fs
 
-      # return [(UnigramClassifier.features(word.lower()), r) for (r, words) in data for word in words
-      #                                               if not isStopWord(word) and not isPunctuation(word)]
+      return [(UnigramClassifier.features(stem(word.lower())), r) for (r, words) in data for word in words
+                                                    if not isStopWord(word) and not isPunctuation(word)]
 
    @staticmethod
    def features(word):
-      return {'unigram':word}
+      return {'word':word, 'sentiment':sentiment(word)}
      
 
 class BigramClassifier(object):
@@ -179,25 +142,31 @@ class ParagraphClassifier(object):
 
    @staticmethod
    def features(paragraph):
-      words = [word for word in paragraph if not isStopWord(word) and not isPunctuation(word)]
-      # return {'least frequent': min(set(words), key=words.count)}
+      words = [stem(word.lower()) for word in paragraph if not isStopWord(word) and not isPunctuation(word)]
+      fs = {}
+      for w in words:
+         fs[w] = 1
+      return fs
+      return {'least frequent': min(set(words), key=words.count)}
 
       taggedlist = nltk.pos_tag(paragraph)
-      adjectives = [w for (w,tag) in taggedlist if tag in adjectiveTags or tag in adverbTags]
+      # adjectives = [w for (w,tag) in taggedlist if tag in adjectiveTags or tag in adverbTags]
+      
       # mAds = leastFrequent(adjectives,10)
       # fs = {}
       # for i in range(len(mAds)):
       #    fs[mAds[i]] = 1
       # return fs
-      return {'frequent adjectives': ' '.join(mostFrequent(adjectives,2)), 
-              'infrequent adjective': leastFrequent(adjectives)[0], 
-              'least frequent':leastFrequent(words)[0],
-              'most frequent':mostFrequent(words)[0] }
-      # fs = {}
-      # for (w, tag) in taggedlist:
-      #    if tag in adjectives:
-      #       fs[w] = 1
-      # return fs #{'first word':paragraph[0]}
+      # return {'frequent adjectives': ' '.join(mostFrequent(adjectives,2)), 
+      #         'infrequent adjective': leastFrequent(adjectives)[0], 
+      #         'least frequent':leastFrequent(words)[0],
+      #         'most frequent':mostFrequent(words)[0] }
+      
+      fs = {}
+      for (w, tag) in taggedlist:
+         if tag in adjectiveTags:
+            fs[w] = 1
+      return fs #{'first word':paragraph[0]}
 
 class CharacterNgramClassifier(object):
    """Paragraph Classifier - accepts data in the (rating, list of words) format"""
