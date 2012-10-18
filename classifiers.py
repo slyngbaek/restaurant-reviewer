@@ -1,4 +1,4 @@
-import nltk, featureutils
+import nltk, featureutils, math
 from featureutils import *
 
 class UnigramClassifier(object):
@@ -171,11 +171,29 @@ class ParagraphClassifier(object):
 class CharacterNgramClassifier(object):
    """Paragraph Classifier - accepts data in the (rating, list of words) format"""
    def __init__(self, authors):
+      self.authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
       self.featureSets = CharacterNgramClassifier.featureSets(authors)
       self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
 
-   def classify(self, paragraph):
-      pass
+   def classify(self, review):
+      trigrams = nltk.trigrams(re.sub("[^a-z]", "", "".join(review).lower()))
+      trigrams = ["".join(t) for t in trigrams]
+
+      nick_profile = self.authorProfiles['Nick Feeney']
+      test_profile = CharacterNgramClassifier.__getNormalizedTrigramFreq(trigrams)
+
+      result_dict = {}
+      for name, profile in self.authorProfiles.iteritems():
+         dissimilarity = 0
+         for tri in test_profile:
+            # Dissimilarity Function
+            fa = test_profile[tri]
+            fb = profile.get(tri, 0)
+            dissimilarity += math.pow(((2 * (fa - fb)) / (fa + fb)), 2) / (4 * len(trigrams))
+         result_dict[name] = dissimilarity
+         print name, dissimilarity
+      print result_dict
+      print min(result_dict.values())
 
    def classifyParagraph(self, p):
       return self.classify(p)
@@ -204,7 +222,6 @@ class CharacterNgramClassifier(object):
       tri_dict = {}
       for t in trigams:
          tri_dict[t] = tri_dict.get(t, 0) + 1
-      return {t: 0 for t in tri_dict}
       return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}
 
    @staticmethod
