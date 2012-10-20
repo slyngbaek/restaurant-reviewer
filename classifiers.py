@@ -5,15 +5,15 @@ class BrettClassifier(object):
    """ Classifier - accepts data in the (rating, list of words) format"""
    def __init__(self, data):
       self.featureSets = self.featureSets(data)
-      #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
-      self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
+      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
 
    def classifyParagraph(self, p):
       return self.classifier.classify(self.features(p))
 
    def most_informative_features(self, n=50):
-      print self.classifier.pp()
-      #self.classifier.show_most_informative_features(n)
+      #print self.classifier.pp()
+      self.classifier.show_most_informative_features(n)
 
    def featureSets(self, data): #data accepted as (rating, list of words)
       return [(self.features(p), str(r)) for (r, p) in data]
@@ -216,10 +216,13 @@ class CharacterNgramClassifier(object):
    def __init__(self, authors):
       self.authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
       self.featureSets = CharacterNgramClassifier.featureSets(authors)
-      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
 
    def classify(self, review):
-      trigrams = nltk.trigrams(re.sub("[^a-z]", "", "".join(review).lower()))
+      trigrams = []
+      for p in review:
+         trigrams.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
       trigrams = ["".join(t) for t in trigrams]
 
       nick_profile = self.authorProfiles['Nick Feeney']
@@ -233,10 +236,9 @@ class CharacterNgramClassifier(object):
             fa = test_profile[tri]
             fb = profile.get(tri, 0)
             dissimilarity += math.pow(((2 * (fa - fb)) / (fa + fb)), 2) / (4 * len(trigrams))
-         result_dict[name] = dissimilarity
-         print name, dissimilarity
-      print result_dict
-      print min(result_dict.values())
+         similarity = 1 - dissimilarity
+         result_dict[name] = similarity
+      return result_dict
 
    def classifyParagraph(self, p):
       return self.classify(p)
@@ -252,13 +254,13 @@ class CharacterNgramClassifier(object):
       author_list = {}
       for author in authors:
          tris = []
-         for r in authors[author]:
-            for p in r:
-               tris.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
+         for p in authors[author]:
+            tris.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
          tris = ["".join(t) for t in tris]
          author_list[author] = tris
 
-      return {k: CharacterNgramClassifier.__getNormalizedTrigramFreq(v) for (k, v) in author_list.iteritems()}
+      return {k: CharacterNgramClassifier.__getNormalizedTrigramFreq(v) 
+                  for (k, v) in author_list.iteritems()}
 
    @staticmethod
    def __getNormalizedTrigramFreq(trigams):

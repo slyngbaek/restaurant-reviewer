@@ -58,11 +58,10 @@ def getAllParagraphs(reviews):
 
 def getAllAuthors(reviews):
    authors = {}
-   for review in reviews:
-      if review.reviewer in authors:
-         authors[review.reviewer].append(review.paragraphs)
-      else:
-         authors[review.reviewer] = [review.paragraphs]
+   for r in reviews:
+      curr = authors.get(r.reviewer, [])
+      curr.extend(r.paragraphs)
+      authors[r.reviewer] = curr
    return authors
 
 def parseReview(path, fname):
