@@ -8,10 +8,29 @@ folds = 4
 
 def main():
    print "Starting classifier ..."
-   data = getTrainData()
+   train, tests = getData()
 
-   exercise1(data)
-   exercise34(data)
+   tests[1].reviewer = "Devlin Cronin"
+   tests[2].reviewer = "Mike Buerli"
+   tests[5].reviewer = "Brett Armstrong"
+   tests[6].reviewer = "Steffen Lyngbaek"
+   tests[7].reviewer = "Ryan Verdon"
+   tests[8].reviewer = "Andrew Sinclair"
+
+   tests[1].ratings = [3,2,3,3]
+   tests[2].ratings = [4,5,5,4]
+   tests[5].ratings = [4,5,4,4]
+   tests[6].ratings = [3,4,3,3]
+   tests[7].ratings = [5,5,4,4]
+   tests[8].ratings = [4,4,5,4]
+
+   tests.pop(4)
+   tests.pop(3)
+   tests.pop(0)
+
+   #exercise1(train)
+   #exercise34(train)
+   makePredictions(train, tests)
 
 def exercise1(data):
    print "Exercise 1 validation"
@@ -23,17 +42,21 @@ def exercise1(data):
 
 def exercise2(data):
    print "Exercise 2 validation"
+   trainSet = splitReviews(data)
+   for i in range(folds):
+      (test, train) = trainSet[i]
+      printValidationSet(i, test)
+      #classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))   
 
 def exercise34(data):
    print "Exercise 3 validation"
    trainSet = splitReviewsByAuthor(data)
    labels = [author for author in sorted(getAllAuthors(data).keys())]
    sim_matrix = [[(0, 0.0) ] * len(labels) for i in range(len(labels))]
-   for i in range(folds):
-      (test, train) = trainSet[i]
+   for i, (test,train) in enumerate(trainSet):
       printValidationSet(i, test)
       classifyAuthors(getAllAuthors(test), getAllAuthors(train), sim_matrix, labels)
-   
+
    print "Similarity Confusion Matrix: "
    sim_matrix = [[float(total) / count for (count, total) in matrixRow] for matrixRow in sim_matrix]
    for num, author in enumerate(labels):
@@ -41,6 +64,11 @@ def exercise34(data):
    print ""
    printMatrix(sim_matrix, True)
 
+def makePredictions(train, tests):
+   labels = [author for author in sorted(getAllAuthors(train).keys())]
+   sim_matrix = [[(0, 0.0) ] * len(labels) for i in range(len(labels))]
+   classifyAuthors(getAllAuthors(tests), getAllAuthors(train), sim_matrix, labels)
+   classifyParagraphs(getAllParagraphs(tests), getAllParagraphs(train))
 
 def printValidationSet(i, reviews):
    fnames = [r.filename for r in reviews]
@@ -87,9 +115,14 @@ def isAuthorInList(author, list):
 
 def classifyAuthors(testData, trainingData, sim_matrix, labels):
    print 'Training Classifier'
+   
+   # for author in trainingData.keys():
+   #    if not author in testData.keys():
+   #       del trainingData[author]
+
    classifier = CharacterNgramClassifier(trainingData)
    correct = 0
-   total = 0
+   totalerror = 0
 
    
    for author in testData.keys():
@@ -101,21 +134,23 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
             rating = num
             break;
       print "Guess: ",'%.3f' % results[guess],'%26s' % guess, " Actual: ", '%.3f' % results[author], author, rating
-      total += rating
+      totalerror = int(rating + totalerror)
       if guess == author:
          correct += 1
 
       #Fill in sim_matrix
       row = labels.index(author)
       for key, value in results.items():
+         if key.lower() == 'x':
+            break;
          col = labels.index(key)
          count, total = sim_matrix[row][col]
          count += 1 
          total += value
          sim_matrix[row][col] = (count, total)
 
-   print "Accuracy:", correct, "/", len(results), " - ", float(correct)/len(results)  
-   print "Avg Error:", float(total) / len(results)
+   print "Accuracy:", correct, "/", len(testData), " - ", float(correct)/len(testData)  
+   print "Avg Error:", float(totalerror) / len(testData)
 
       #classifier.classify([word for p in testData[author] for word in p])
       # count[r - 1][rating - 1] += 1
@@ -144,7 +179,7 @@ def classifyParagraphs(testData, trainingData):
       #print str(r) + " : " + str(rating)
       #if math.fabs(r - rating) >= 2 :
       #   print ' '.join(p)
-      total += (rating - r) * (rating - r)
+      total += float((rating - r) * (rating - r))
 
    rms = math.sqrt(total / float(len(testData)))
    print "RMS error : " + str(rms)

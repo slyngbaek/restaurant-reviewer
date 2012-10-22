@@ -5,15 +5,17 @@ class BrettClassifier(object):
    """ Classifier - accepts data in the (rating, list of words) format"""
    def __init__(self, data):
       self.featureSets = self.featureSets(data)
-      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
       #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
+      self.classifier = nltk.MaxentClassifier.train(self.featureSets)
 
    def classifyParagraph(self, p):
       return self.classifier.classify(self.features(p))
 
    def most_informative_features(self, n=50):
+      pass
       #print self.classifier.pp()
-      self.classifier.show_most_informative_features(n)
+      #self.classifier.show_most_informative_features(n)
 
    def featureSets(self, data): #data accepted as (rating, list of words)
       return [(self.features(p), str(r)) for (r, p) in data]
@@ -217,7 +219,8 @@ class CharacterNgramClassifier(object):
       self.authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
       self.featureSets = CharacterNgramClassifier.featureSets(authors)
       #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
-      self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
+      #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
+      self.classifier = nltk.MaxentClassifier.train(self.featureSets)
 
    def classify(self, review):
       trigrams = []
@@ -225,7 +228,7 @@ class CharacterNgramClassifier(object):
          trigrams.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
       trigrams = ["".join(t) for t in trigrams]
 
-      nick_profile = self.authorProfiles['Nick Feeney']
+      #nick_profile = self.authorProfiles['Nick Feeney']
       test_profile = CharacterNgramClassifier.__getNormalizedTrigramFreq(trigrams)
 
       result_dict = {}
@@ -263,11 +266,14 @@ class CharacterNgramClassifier(object):
                   for (k, v) in author_list.iteritems()}
 
    @staticmethod
-   def __getNormalizedTrigramFreq(trigams):
+   def __getNormalizedTrigramFreq(trigrams):
+      triFreq = nltk.FreqDist(trigrams)
+
       tri_dict = {}
-      for t in trigams:
-         tri_dict[t] = tri_dict.get(t, 0) + 1
-      return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}
+      for t in triFreq.keys()[:300]:
+         tri_dict[t] = triFreq.freq(t)
+      return tri_dict
+      #return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}
 
    @staticmethod
    def featureSets(authors): #data accepted as (rating, list of words)

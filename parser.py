@@ -1,7 +1,7 @@
 import nltk, os, re
 
-testData = "./test/"
-trainData = "./training/"
+testDataDir = "./test/"
+trainDataDir = "./training/"
 
 class Review(object):
    """A user review"""
@@ -35,18 +35,25 @@ class Review(object):
          print line
       print "-----"
 
-def getTrainData():
+def getDataFromDir(directory):
    reviews = []
    count = 0
-   for fname in os.listdir(trainData):
+   for fname in os.listdir(directory):
       if fname.endswith('.html'):
          count += 1
-         reviews.extend(parseReview(trainData, fname))
+         reviews.extend(parseReview(directory, fname))
 
-   print "   " + str(count) + " training documents found"
-   print "   " + str(len(reviews)) + " reviews digitized"
+   return reviews, count
 
-   return reviews
+def getData():
+   (train, trainDocs) = getDataFromDir(trainDataDir)
+   (tests, testDocs) = getDataFromDir(testDataDir)
+
+   print "   " + str(trainDocs) + " training documents found."
+   print "   " + str(len(train)) + " reviews digitized."
+   print "   " + str(testDocs)  + " test documents found."
+
+   return (train, tests)
 
 def getAllParagraphs(reviews):
    paras = []
@@ -92,7 +99,10 @@ def parseReview(path, fname):
       elif field[0] in dataInputs:
          setattr(r, field[0].lower(), field[1])
       elif field[0] in ratingInputs:
-         r.ratings.append(int(field[1]))
+         try: 
+            r.ratings.append(int(field[1]))
+         except ValueError:
+            r.ratings.append(-1)
    
    #Set Filenames (add -1, -2 etc if needed)
    if len(reviews) == 1:
@@ -100,7 +110,6 @@ def parseReview(path, fname):
    else:
       for i, r in enumerate(reviews):
          r.filename = fname + "-" + str(i + 1)
-
 
    fp.close()
    return reviews
