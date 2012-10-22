@@ -1,4 +1,4 @@
-import re, nltk
+import re, nltk, operator
 from string import atof
 
 adjectiveTags = ['JJ','JJR','JJS']
@@ -7,6 +7,14 @@ comparativeTags = ['RBR','JJR']
 
 goodTags = ['RBR','JJS','CC','JJR'] #':'
 goodWords = ['good','great','awesome','bad','less','more','better', 'food', 'waitress', 'grill', 'pretty', 'always', 'nice', 'quality', 'rather', 'quick', 'lot']
+
+
+
+def ratingFromProb(p,skew=[1,1,1,1,1]):
+   ps = {}
+   for i in range(1,6):
+      ps[i] = p.prob(i)*skew[i-1]
+   return max(ps.iteritems(), key=operator.itemgetter(1))[0]
 
 def buildSenti():
    f = open('senti_wordnet.txt','r')
@@ -85,6 +93,25 @@ def isStopWord(word):
 
 def isPunctuation(word):
    return word[0] in ".,/?':;!$%()-"
+
+def numberOfSentences(p):
+   count = 0
+   for word in p:
+      if isEndOfSentence(word):
+         count = count + 1
+   return count
+
+def averageSentenceLength(p):
+   count = 0
+   curLen = 0
+   totalLen = 0 
+   for word in p:
+      curLen += 1
+      if isEndOfSentence(word):
+         totalLen += curLen
+         count += 1
+         curLen = 0
+   return float(totalLen)/count
 
 def isEndOfSentence(word):
    return word[0] in ".?!" or word[-1:] in ".?!"
