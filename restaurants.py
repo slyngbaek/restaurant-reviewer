@@ -10,7 +10,7 @@ def main():
    print "Starting classifier ..."
    data = getTrainData()
 
-   for N in range(3, 4) :
+   for N in range(1, 2) :
       doExercise(N, data)
 
 def doExercise(N, data):
@@ -62,7 +62,7 @@ def classifyAuthors(testData, trainingData):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = UnigramClassifier(trainingData) #UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
+   classifier = BigramClassifier(trainingData) #UnigramClassifier(trainingData) #BigramClassifier(trainingData)  or ParagraphClassifier(trainingData)
    total = 0.0
 
    for (r, p) in testData:

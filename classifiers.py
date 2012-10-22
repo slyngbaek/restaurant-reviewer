@@ -97,9 +97,12 @@ class BigramClassifier(object):
       return self.classifier.classify(BigramClassifier.features(bigram))
 
    def classifyParagraph(self, p):
-      bigrams = nltk.bigrams(p)
+      nicewords = [word.lower() for word in p if not isStopWord(word) and not isPunctuation(word)]
+      bigrams = nltk.bigrams(nicewords)
       rating = 0
       for bigram in bigrams:
+         r = self.classifier.classify(BigramClassifier.features(bigram))
+         if r
          rating += self.classifier.classify(BigramClassifier.features(bigram))
       return float(rating)/len(bigrams)
 
@@ -111,11 +114,19 @@ class BigramClassifier(object):
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      return [(BigramClassifier.features(bigram), r) for (r, words) in data for bigram in nltk.bigrams(words)]
+      fs = [] 
+      for (r, words) in data:
+         nicewords = [word.lower() for word in words if not isStopWord(word) and not isPunctuation(word)]
+         for bigram in nltk.bigrams(nicewords):
+            fs.append((BigramClassifier.features(bigram),r))
+
+      return fs
+
+      return [(BigramClassifier.features(bigram), r)  for bigram in nltk.bigrams(words)]
 
    @staticmethod
    def features(bigram):
-      return {'bigram':bigram}
+      return {'sentiment':sentiment(bigram[0])}
 
 
 class ParagraphClassifier(object):

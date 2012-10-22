@@ -23,9 +23,19 @@ senti_wordnet = buildSenti()
 
 def sentiment(word):
     if word in senti_wordnet:
-        if senti_wordnet[word][1] > 0:
-            return senti_wordnet[word][0] - 2*senti_wordnet[word][1]
-    return 0
+      senti = senti_wordnet[word][0] - senti_wordnet[word][1]
+      return int(senti*10)
+      if senti > .6:
+         return 'high'
+      elif senti > .2:
+         return 'medium'
+      elif senti > -.2:
+         return 'neutral'
+      elif senti > -.6:
+         return 'low'
+      else:
+         return 'very-low'
+    return 'neutral'
 
 def mostFrequent(words,n=1):
    if len(words) < 2:
