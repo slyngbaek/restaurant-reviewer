@@ -29,18 +29,22 @@ def main():
    # tests.pop(3)
    # tests.pop(0)
 
-   #exercise1(train)
-   #exercise2(train)
+   exercise1(train)
+   exercise2(train)
    exercise34(train)
    makePredictions(train, tests)
 
 def exercise1(data):
    print "Exercise 1 validation"
    trainSet = splitReviews(data)
+   totalrms = 0.0
    for i in range(folds):
       (test, train) = trainSet[i]
       printValidationSet(i, test)
-      classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))
+      totalrms += classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))
+   totalrms = totalrms / 4.0
+
+   print "Exercise 1 Overall RMS Error:", totalrms 
 
 def exercise2(data):
    print "Exercise 2 validation"
@@ -57,11 +61,15 @@ def exercise2(data):
 def exercise34(data):
    print "Exercise 3 validation"
    trainSet = splitReviewsByAuthor(data)
+   totalrms = 0.0
    labels = [author for author in sorted(getAllAuthors(data).keys())]
    sim_matrix = [[(0, 0.0) ] * len(labels) for i in range(len(labels))]
    for i, (test,train) in enumerate(trainSet):
       printValidationSet(i, test)
-      classifyAuthors(getAllAuthors(test), getAllAuthors(train), sim_matrix, labels)
+      totalrms += classifyAuthors(getAllAuthors(test), getAllAuthors(train), sim_matrix, labels)
+   totalrms = totalrms / 4.0
+
+   print "Exercise 3 Overall RMS Error:", totalrms 
 
    print "Similarity Confusion Matrix: "
    sim_matrix = [[float(total) / count for (count, total) in matrixRow] for matrixRow in sim_matrix]
@@ -157,7 +165,8 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
             rating = num
             break;
       print "Guess: ",'%.3f' % results[guess],'%26s' % guess, " Actual: ", '%.3f' % results[author], author, rating
-      totalerror = int(rating + totalerror)
+      if guess != author:
+         totalerror += 1
       if guess == author:
          correct += 1
 
@@ -172,8 +181,11 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
          total += value
          sim_matrix[row][col] = (count, total)
 
+   rms =  math.sqrt(float(totalerror) / len(testData))
    print "Accuracy:", correct, "/", len(testData), " - ", float(correct)/len(testData)  
-   print "Avg Error:", float(totalerror) / len(testData)
+   print "RMS Error:", rms
+
+   return rms
 
 def classifyReviews(testData, trainingData):
    """ test/training data is of form (list of ratings, list of paragraphs)"""
@@ -190,19 +202,14 @@ def classifyReviews(testData, trainingData):
          rating = classifier.classifyParagraph(p)
          ratings.append(rating)
       overall = .2 * ratings[0] + .2 * ratings[1] + .2 * ratings[2] + .4 * ratings[3]
-      #count[r - 1][overall - 1] += 1
       if overall == lr[3]:
          correct += 1
       print str(lr) + " : " + str(overall), ratings
-         #if math.fabs(r - overall) >= 2 :
-         #   print ' '.join(p)
       total += float((overall - lr[3]) * (overall - lr[3]))
 
    rms = math.sqrt(total / float(len(testData)))
    print "RMS error : " + str(rms)
    print "Accuracy  : " + str(float(correct) / len(testData))
-   #print "Counts    : "
-   #printMatrix(count, False)
    classifier.most_informative_features()
    return rms
 
@@ -230,8 +237,7 @@ def classifyParagraphs(testData, trainingData):
    print "Accuracy  : " + str(float(correct) / len(testData))
    print "Counts    : "
    printMatrix(count, False)
-   classifier.most_informative_features()
-
+   return rms
 
 def printMatrix(matrix, isFloat):
    print "%7s" % "", ''.join(['%7s' % (i + 1) for i in range(len(matrix))])
@@ -240,7 +246,6 @@ def printMatrix(matrix, isFloat):
       if isFloat:
          formatString = '%7.3f'
       print '%7s' % (i + 1), ''.join([formatString % val for val in matrix[i]])
-
 
 if __name__ == '__main__':
    main()

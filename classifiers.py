@@ -245,7 +245,7 @@ class SentenceClassifier(object):
    def __init__(self, data):
       self.uclassifier = UnigramClassifier(data)
       featureSets = self.featureSets(data)
-      self.classifier = nltk.MaxentClassifier.train(featureSets)
+      self.classifier = nltk.MaxentClassifier.train(featureSets, trace = 1)
 
    def classify(self, sentence):
       return self.classifier.classify(self.features(sentence))
@@ -415,7 +415,7 @@ class CharacterNgramClassifier(object):
       self.featureSets = CharacterNgramClassifier.featureSets(authors)
       #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
       #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
-      self.classifier = nltk.MaxentClassifier.train(self.featureSets)
+      self.classifier = nltk.MaxentClassifier.train(self.featureSets, trace = 1)
 
    def classify(self, review):
       trigrams = []
