@@ -11,7 +11,7 @@ def main():
    data = getTrainData()
 
    exercise1(data)
-   exercise34(data)
+   #exercise34(data)
 
 def exercise1(data):
    print "Exercise 1 validation"
@@ -131,7 +131,7 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = BrettClassifier(trainingData)
+   classifier = SentenceClassifier(trainingData) #BrettClassifier UnigramClassifier
    total = 0.0
    count = [[0] * 5 for i in range(5)]
    correct = 0

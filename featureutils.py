@@ -22,20 +22,20 @@ def buildSenti():
 senti_wordnet = buildSenti()
 
 def sentiment(word):
-    if word in senti_wordnet:
+   if word in senti_wordnet:
       senti = senti_wordnet[word][0] - senti_wordnet[word][1]
       return int(senti*10)
       if senti > .6:
-         return 'high'
+         return 2
       elif senti > .2:
-         return 'medium'
+         return 1
       elif senti > -.2:
-         return 'neutral'
+         return 0
       elif senti > -.6:
-         return 'low'
+         return -1
       else:
-         return 'very-low'
-    return 'neutral'
+         return -2
+   return 0
 
 def mostFrequent(words,n=1):
    if len(words) < 2:
@@ -85,3 +85,10 @@ def isStopWord(word):
 
 def isPunctuation(word):
    return word[0] in ".,/?':;!$%()-"
+
+def isEndOfSentence(word):
+   return word[0] in ".?!" or word[-1:] in ".?!"
+
+def addKeysToDict(keys, d, value=True):
+   for key in keys:
+      d[key] = value
