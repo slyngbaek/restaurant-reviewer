@@ -1,5 +1,48 @@
-import nltk, featureutils
+import nltk, featureutils, math
 from featureutils import *
+
+class BrettClassifier(object):
+   """ Classifier - accepts data in the (rating, list of words) format"""
+   def __init__(self, data):
+      self.featureSets = self.featureSets(data)
+      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
+
+   def classifyParagraph(self, p):
+      return self.classifier.classify(self.features(p))
+
+   def most_informative_features(self, n=50):
+      #print self.classifier.pp()
+      self.classifier.show_most_informative_features(n)
+
+   def featureSets(self, data): #data accepted as (rating, list of words)
+      return [(self.features(p), str(r)) for (r, p) in data]
+
+   def features(self, paragraph) :
+      features = self.unigramsPOS(paragraph)
+      #print features
+      return features
+
+   def unigrams(self, paragraph):
+      """ Creates a feature set for one paragraph"""
+      freq = nltk.FreqDist([word.lower() for word in paragraph if not isStopWord(word)])
+      #return {key : freq.freq(key) for key in freq.keys()}
+      return {key : True for key in freq.keys()}
+
+   def unigramsPOS(self, paragraph):
+      selectTags = ['JJ','JJR','JJS', 'WRB','RB','RBR','RBS']
+      words = nltk.pos_tag(paragraph)
+      freq = nltk.FreqDist([word.lower() for word, POS in words if POS in selectTags ])
+      #return {key : freq.freq(key) for key in freq.keys()}
+      return {key : True for key in freq.keys()}
+
+   def bigrams(self, paragraph):
+      bigrams = nltk.util.bigrams(paragraph)
+      freq = nltk.FreqDist(bigrams)
+      #return {key : freq.freq(key) for key in freq.keys()}
+      return {key : freq.freq(key) for key in freq.keys() if key not in freq.hapaxes()}
+
+
 
 class UnigramClassifier(object):
    """Unigram Classifier - accepts data in the (rating, list of words) format"""
@@ -182,11 +225,31 @@ class ParagraphClassifier(object):
 class CharacterNgramClassifier(object):
    """Paragraph Classifier - accepts data in the (rating, list of words) format"""
    def __init__(self, authors):
+      self.authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
       self.featureSets = CharacterNgramClassifier.featureSets(authors)
-      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+      self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
 
-   def classify(self, paragraph):
-      pass
+   def classify(self, review):
+      trigrams = []
+      for p in review:
+         trigrams.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
+      trigrams = ["".join(t) for t in trigrams]
+
+      nick_profile = self.authorProfiles['Nick Feeney']
+      test_profile = CharacterNgramClassifier.__getNormalizedTrigramFreq(trigrams)
+
+      result_dict = {}
+      for name, profile in self.authorProfiles.iteritems():
+         dissimilarity = 0
+         for tri in test_profile:
+            # Dissimilarity Function
+            fa = test_profile[tri]
+            fb = profile.get(tri, 0)
+            dissimilarity += math.pow(((2 * (fa - fb)) / (fa + fb)), 2) / (4 * len(trigrams))
+         similarity = 1 - dissimilarity
+         result_dict[name] = similarity
+      return result_dict
 
    def classifyParagraph(self, p):
       return self.classify(p)
@@ -202,20 +265,19 @@ class CharacterNgramClassifier(object):
       author_list = {}
       for author in authors:
          tris = []
-         for r in authors[author]:
-            for p in r:
-               tris.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
+         for p in authors[author]:
+            tris.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
          tris = ["".join(t) for t in tris]
          author_list[author] = tris
 
-      return {k: CharacterNgramClassifier.__getNormalizedTrigramFreq(v) for (k, v) in author_list.iteritems()}
+      return {k: CharacterNgramClassifier.__getNormalizedTrigramFreq(v) 
+                  for (k, v) in author_list.iteritems()}
 
    @staticmethod
    def __getNormalizedTrigramFreq(trigams):
       tri_dict = {}
       for t in trigams:
          tri_dict[t] = tri_dict.get(t, 0) + 1
-      return {t: 0 for t in tri_dict}
       return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}
 
    @staticmethod
