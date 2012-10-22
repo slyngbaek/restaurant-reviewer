@@ -216,8 +216,8 @@ def classifyReviews(testData, trainingData):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   #classifier = BrettClassifier(trainingData)
-   classifier = SentenceClassifier(trainingData)
+   classifier = BrettClassifier(trainingData)
+   #classifier = SentenceClassifier(trainingData)
    total = 0.0
    count = [[0] * 5 for i in range(5)]
    correct = 0
