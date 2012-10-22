@@ -110,27 +110,26 @@ class UnigramClassifier(object):
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      # fs = [];
-      # for (r, words) in data:
-      #    taggedWords = nltk.pos_tag(words)
-      #    fs.extend([(UnigramClassifier.features(word.lower()), r) for (word, tag) in taggedWords
-      #                                               if tag in goodTags])
-      # return fs
-
-      fs = []
+      fs = [];
       for (r, words) in data:
-         words = [stem(word.lower()) for word in words if not isStopWord(word) and not isPunctuation(word)]
-         words = leastFrequent(words, (len(words)*2)/10)
-         fs.extend([(UnigramClassifier.features(word), r) for word in words[:]])
+         taggedWords = nltk.pos_tag(words)
+         fs.extend([(UnigramClassifier.features(word.lower()), r) for (word, tag) in taggedWords
+                                                    if tag in goodTags])
       return fs
 
-      return [(UnigramClassifier.features(stem(word.lower())), r) for (r, words) in data for word in words
-                                                    if not isStopWord(word) and not isPunctuation(word)]
+      # fs = []
+      # for (r, words) in data:
+      #    words = [stem(word.lower()) for word in words if not isStopWord(word) and not isPunctuation(word)]
+      #    words = leastFrequent(words, (len(words)*2)/10)
+      #    fs.extend([(UnigramClassifier.features(word), r) for word in words[:]])
+      # return fs
+
+      # return [(UnigramClassifier.features(stem(word.lower())), r) for (r, words) in data for word in words
+      #                                               if not isStopWord(word) and not isPunctuation(word)]
 
    @staticmethod
    def features(word):
-      return {'word':word, 'sentiment':sentiment(word)}
-     
+      return {'word':word}#, 'sentiment':sentiment(word)}
 
 class BigramClassifier(object):
    """Bigram Classifier - accepts data in the (rating, list of words) format"""
@@ -142,9 +141,12 @@ class BigramClassifier(object):
       return self.classifier.classify(BigramClassifier.features(bigram))
 
    def classifyParagraph(self, p):
-      bigrams = nltk.bigrams(p)
+      nicewords = [word.lower() for word in p if not isStopWord(word) and not isPunctuation(word)]
+      bigrams = nltk.bigrams(nicewords)
       rating = 0
       for bigram in bigrams:
+         #r = self.classifier.classify(BigramClassifier.features(bigram))
+         #if r:
          rating += self.classifier.classify(BigramClassifier.features(bigram))
       return float(rating)/len(bigrams)
 
@@ -156,12 +158,117 @@ class BigramClassifier(object):
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      return [(BigramClassifier.features(bigram), r) for (r, words) in data for bigram in nltk.bigrams(words)]
+      fs = [] 
+      for (r, words) in data:
+         nicewords = [word.lower() for word in words if not isStopWord(word) and not isPunctuation(word)]
+         for bigram in nltk.bigrams(nicewords):
+            fs.append((BigramClassifier.features(bigram),r))
+
+      return fs
+
+      return [(BigramClassifier.features(bigram), r)  for bigram in nltk.bigrams(words)]
 
    @staticmethod
    def features(bigram):
-      return {'bigram':bigram}
+      return {'sentiment':sentiment(bigram[0])}
 
+
+class SentenceClassifier(object):
+   """Paragraph Classifier - accepts data in the (rating, list of words) format"""
+   def __init__(self, data):
+      self.featureSets = SentenceClassifier.featureSets(data)
+      self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
+
+   def classify(self, sentence):
+      return self.classifier.classify(SentenceClassifier.features(sentence))
+
+   def classifyParagraph(self, p):
+      rating = 0
+      count = 0
+      sentence = []
+      for word in p:
+         sentence.append(word)
+         if isEndOfSentence(word):
+            rating += self.classify(sentence)
+            count = count + 1
+            sentence = []
+      if count < 1:
+         return 4
+      print float(rating)/count
+      return float(rating)/count
+
+   def most_informative_features(self, n=20):
+      return self.classifier.show_most_informative_features(n)
+
+   def accuracy(self, test):
+      return nltk.classify.accuracy(self.classifier, SentenceClassifier.featureSets(test))
+
+   @staticmethod
+   def featureSets(data): #data accepted as (rating, list of words)
+      sentences = []
+      for (r, words) in data:
+         sentence = []
+         for word in words:
+            sentence.append(word)
+            if isEndOfSentence(word):
+               sentences.append(( SentenceClassifier.features(sentence), r ))
+               sentence = []
+
+      print sentences
+      return sentences
+
+   @staticmethod
+   def features(sentence):
+      fs = {}
+
+      #taggedwords = nltk.pos_tag(sentence)
+      #posWords = [stem(word.lower()) for (word, tag) in taggedwords if tag in goodTags]
+      simpleWords = [stem(word.lower()) for word in sentence if not isStopWord(word) and not isPunctuation(word)]
+      sentiments = [sentiment(word) for word in sentence]
+      lsentiWords = [stem(word.lower()) for word in sentence if sentiment(word) < 0]
+      hsentiWords = [stem(word.lower()) for word in sentence if sentiment(word) > 0]
+
+      fs['lsenti'] = len(lsentiWords)
+      fs['hsenti'] = len(hsentiWords)
+      fs['words'] = len(sentence)
+      #fs['swords'] = len(simpleWords)
+
+      #if min(sentiments) < 0:
+      #   fs['sentiment'] = 'low'
+
+      #if max(sentiments) > 3:
+      #   fs['sentiment'] = 'high'
+
+      # addKeysToDict(leastFrequent(simpleWords,2), fs, 'least')
+      # addKeysToDict(mostFrequent(simpleWords,2), fs, 'most')
+      
+      #addKeysToDict(lsentiWords, fs, 'low sentiment')
+      #addKeysToDict(hsentiWords, fs, 'high sentiment')
+      
+      #addKeysToDict(posWords,fs)
+      #addKeysToDict(simpleWords,fs)
+
+      return fs
+
+      length = len(words)
+      senti = 0
+      for i in range(length):
+         # sentiw = sentiment(words[i])
+         # if sentiw < 0:
+         #    senti = -100
+         # else:
+         #    senti += sentiw
+
+         fs[words[i]] = True
+         #if i + 1 < length:
+            #fs[' '.join(words[i:i+2])] = 'bigram'
+         #if i + 2 < length:
+            #fs[' '.join(words[i:i+3])] = 'trigram'
+
+      # if senti < 0:
+      #    fs['sentiment'] = 'bad'
+      return fs
+      #return {'least frequent': min(set(words), key=words.count)}
 
 class ParagraphClassifier(object):
    """Paragraph Classifier - accepts data in the (rating, list of words) format"""
