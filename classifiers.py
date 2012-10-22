@@ -7,7 +7,7 @@ class BrettClassifier(object):
       self.featureSets = self.featureSets(data)
       #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
       #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
-      self.classifier = nltk.MaxentClassifier.train(self.featureSets)
+      self.classifier = nltk.MaxentClassifier.train(self.featureSets, trace = 1)
 
    def classifyParagraph(self, p):
       return self.classifier.classify(self.features(p))
@@ -18,7 +18,7 @@ class BrettClassifier(object):
       #self.classifier.show_most_informative_features(n)
 
    def featureSets(self, data): #data accepted as (rating, list of words)
-      return [(self.features(p), str(r)) for (r, p) in data]
+      return [(self.features(p), r) for (r, p) in data]
 
    def features(self, paragraph) :
       features = self.unigramsPOS(paragraph)
@@ -377,7 +377,7 @@ class CharacterNgramClassifier(object):
       triFreq = nltk.FreqDist(trigrams)
 
       tri_dict = {}
-      for t in triFreq.keys()[:300]:
+      for t in triFreq.keys()[:100]:
          tri_dict[t] = triFreq.freq(t)
       return tri_dict
       #return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}

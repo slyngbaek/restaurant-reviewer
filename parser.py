@@ -63,6 +63,13 @@ def getAllParagraphs(reviews):
 
    return paras
 
+def getOverallParagraphs(reviews):
+   """returns list of (overall rating, list of paragraphs)"""
+   revs = []
+   for r in reviews:
+      revs.append((r.ratings, r.paragraphs))
+   return revs
+
 def getAllAuthors(reviews):
    authors = {}
    for r in reviews:

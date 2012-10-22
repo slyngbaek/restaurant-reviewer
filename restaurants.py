@@ -11,26 +11,27 @@ def main():
 
    train, tests = getData()
 
-   tests[1].reviewer = "Devlin Cronin"
-   tests[2].reviewer = "Mike Buerli"
-   tests[5].reviewer = "Brett Armstrong"
-   tests[6].reviewer = "Steffen Lyngbaek"
-   tests[7].reviewer = "Ryan Verdon"
-   tests[8].reviewer = "Andrew Sinclair"
+   # tests[2 - 1].reviewer = "Devlin Cronin"
+   # tests[3 - 1].reviewer = "Mike Buerli"
+   # tests[6 - 1].reviewer = "Brett Armstrong"
+   # tests[7 - 1].reviewer = "Steffen Lyngbaek"
+   # tests[8 - 1].reviewer = "Ryan Verdon"
+   # tests[9 - 1].reviewer = "Andrew Sinclair"
 
-   tests[1].ratings = [3,2,3,3]
-   tests[2].ratings = [4,5,5,4]
-   tests[5].ratings = [4,5,4,4]
-   tests[6].ratings = [3,4,3,3]
-   tests[7].ratings = [5,5,4,4]
-   tests[8].ratings = [4,4,5,4]
+   # tests[2 - 1].ratings = [3,2,3,3]
+   # tests[3 - 1].ratings = [4,5,5,4]
+   # tests[6 - 1].ratings = [4,5,4,4]
+   # tests[7 - 1].ratings = [3,4,3,3]
+   # tests[8 - 1].ratings = [5,5,4,4]
+   # tests[9 - 1].ratings = [4,4,5,4]
 
-   tests.pop(4)
-   tests.pop(3)
-   tests.pop(0)
+   # tests.pop(4)
+   # tests.pop(3)
+   # tests.pop(0)
 
    #exercise1(train)
-   #exercise34(train)
+   #exercise2(train)
+   exercise34(train)
    makePredictions(train, tests)
 
 def exercise1(data):
@@ -44,10 +45,14 @@ def exercise1(data):
 def exercise2(data):
    print "Exercise 2 validation"
    trainSet = splitReviews(data)
+   totalrms = 0.0
    for i in range(folds):
       (test, train) = trainSet[i]
       printValidationSet(i, test)
-      #classifyParagraphs(getAllParagraphs(test), getAllParagraphs(train))   
+      totalrms += classifyReviews(getOverallParagraphs(test), getOverallParagraphs(train))   
+   totalrms = totalrms / 4.0
+
+   print "Exercise 2 Overall RMS Error:", totalrms 
 
 def exercise34(data):
    print "Exercise 3 validation"
@@ -66,10 +71,27 @@ def exercise34(data):
    printMatrix(sim_matrix, True)
 
 def makePredictions(train, tests):
-   labels = [author for author in sorted(getAllAuthors(train).keys())]
-   sim_matrix = [[(0, 0.0) ] * len(labels) for i in range(len(labels))]
-   classifyAuthors(getAllAuthors(tests), getAllAuthors(train), sim_matrix, labels)
-   classifyParagraphs(getAllParagraphs(tests), getAllParagraphs(train))
+
+#[NAME OF FILE], [PARAGRAPH PREDICTIONS 1-4], [OVERALL RATING PREDICTION], [AUTHOR PREDICTION] [NEWLINE]
+   outfp = open("predictions.txt", 'w')
+
+
+   authorClassifier = CharacterNgramClassifier(getAllAuthors(train))
+   paragraphClassifier = BrettClassifier(getAllParagraphs(train))
+
+   for rev in tests:
+      paragraph_ratings = []
+      for p in rev.paragraphs:
+         paragraph_ratings.append(paragraphClassifier.classifyParagraph(p))
+      results = authorClassifier.classify(rev.paragraphs)
+      guess = [key for key, value in results.items() if value == max(results.values())][0]
+      overall_rating = sum([.2 * r for r in paragraph_ratings[:-1]]) + .4 * paragraph_ratings[-1]
+      paragraph_ratings = [str(r) for r in paragraph_ratings]
+      pred_str = rev.filename + ", " + ', '.join(paragraph_ratings) + ", " + str(overall_rating) + ", " + guess
+      print pred_str
+      outfp.write(pred_str + "\n")
+
+   outfp.close()
 
 def printValidationSet(i, reviews):
    fnames = [r.filename for r in reviews]
@@ -153,21 +175,42 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
    print "Accuracy:", correct, "/", len(testData), " - ", float(correct)/len(testData)  
    print "Avg Error:", float(totalerror) / len(testData)
 
-      #classifier.classify([word for p in testData[author] for word in p])
-      # count[r - 1][rating - 1] += 1
-      # if rating == r:
-      #    correct += 1
-      #print str(r) + " : " + str(rating)
-      #if math.fabs(r - rating) >= 2 :
-      #   print ' '.join(p)
-      # total += (rating - r) * (rating - r)
+def classifyReviews(testData, trainingData):
+   """ test/training data is of form (list of ratings, list of paragraphs)"""
+   trainingData = [(lr[i], lp[i]) for lr, lp in trainingData for i in range(len(lr))]
+   classifier = BrettClassifier(trainingData)
 
-   #print 'Accuracy: ', classifier.accuracy(testData)
-   #classifier.most_informative_features()
+   total = 0.0
+   count = [[0] * 5 for i in range(5)]
+   correct = 0
+
+   for (lr, lp) in testData:
+      ratings = []
+      for p in lp:
+         rating = classifier.classifyParagraph(p)
+         ratings.append(rating)
+      overall = .2 * ratings[0] + .2 * ratings[1] + .2 * ratings[2] + .4 * ratings[3]
+      #count[r - 1][overall - 1] += 1
+      if overall == lr[3]:
+         correct += 1
+      print str(lr) + " : " + str(overall), ratings
+         #if math.fabs(r - overall) >= 2 :
+         #   print ' '.join(p)
+      total += float((overall - lr[3]) * (overall - lr[3]))
+
+   rms = math.sqrt(total / float(len(testData)))
+   print "RMS error : " + str(rms)
+   print "Accuracy  : " + str(float(correct) / len(testData))
+   #print "Counts    : "
+   #printMatrix(count, False)
+   classifier.most_informative_features()
+   return rms
+
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = SentenceClassifier(trainingData) #BrettClassifier UnigramClassifier
+   #classifier = BrettClassifier(trainingData)
+   classifier = SentenceClassifier(trainingData)
    total = 0.0
    count = [[0] * 5 for i in range(5)]
    correct = 0
