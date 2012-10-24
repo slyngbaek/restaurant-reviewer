@@ -62,10 +62,12 @@ def exercise34(data):
 
 def makePredictions(train, tests):
 
+   print "Processing test set"
    outfp = open("predictions.txt", 'w')
 
    authorClassifier = CharacterNgramClassifier(getAllAuthors(train))
-   paragraphClassifier = BrettClassifier(getAllParagraphs(train))
+   #paragraphClassifier = BrettClassifier(getAllParagraphs(train))
+   paragraphClassifier = SentenceClassifier(getAllParagraphs(train))
 
    for rev in tests:
       paragraph_ratings = []
@@ -164,7 +166,8 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
 def classifyReviews(testData, trainingData):
    """ test/training data is of form (list of ratings, list of paragraphs)"""
    trainingData = [(lr[i], lp[i]) for lr, lp in trainingData for i in range(len(lr))]
-   classifier = BrettClassifier(trainingData)
+   #classifier = BrettClassifier(trainingData)
+   classifier = SentenceClassifier(trainingData)
 
    total = 0.0
    count = [[0] * 5 for i in range(5)]
@@ -190,8 +193,8 @@ def classifyReviews(testData, trainingData):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = BrettClassifier(trainingData)
-   #classifier = SentenceClassifier(trainingData)
+   #classifier = BrettClassifier(trainingData)
+   classifier = SentenceClassifier(trainingData)
 
    total = 0.0
    count = [[0] * 5 for i in range(5)]
