@@ -131,14 +131,14 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
 
 def classifyParagraphs(testData, trainingData):
    print 'Training classifier'
-   classifier = SentenceClassifier(trainingData) #BrettClassifier UnigramClassifier
+   classifier = SentenceClassifier(trainingData) #BrettClassifier UnigramClassifier SentenceClassifier
    total = 0.0
    count = [[0] * 5 for i in range(5)]
    correct = 0
 
    for (r, p) in testData:
-      rating = int(classifier.classifyParagraph(p))
-      count[r - 1][rating - 1] += 1
+      rating = classifier.classifyParagraph(p)
+      count[r - 1][int(rating+.5) - 1] += 1
       if rating == r:
          correct += 1
       #print str(r) + " : " + str(rating)
