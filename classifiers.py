@@ -152,8 +152,9 @@ class UnigramClassifier(object):
 
    @staticmethod
    def featureSets(data): #data accepted as (rating, list of words)
-      fs = UnigramClassifier.mostFreqFeatureSets(data)
-      fs.extend(UnigramClassifier.posFeatureSets(data))
+      return UnigramClassifier.simpleFeatureSets(data)
+      fs = UnigramClassifier.leastFreqFeatureSets(data)
+      fs.extend(UnigramClassifier.mostFreqFeatureSets(data,4))
       return fs
 
    @staticmethod
@@ -190,7 +191,9 @@ class UnigramClassifier(object):
 
    @staticmethod
    def features(word):
-      return {'word':word}
+      return {'word':word, 'sentiment':int(sentiment(word)/4), 'wordlen':int(len(word)/5 + .5)}
+
+
 
 class BigramClassifier(object):
    """Bigram Classifier - accepts data in the (rating, list of words) format"""
@@ -245,7 +248,8 @@ class SentenceClassifier(object):
    def __init__(self, data):
       self.uclassifier = UnigramClassifier(data)
       featureSets = self.featureSets(data)
-      self.classifier = nltk.MaxentClassifier.train(featureSets, trace = 1)
+      #self.classifier = nltk.MaxentClassifier.train(featureSets, trace = 1)
+      self.classifier = nltk.NaiveBayesClassifier.train(featureSets)
 
    def classify(self, sentence):
       return self.classifier.classify(self.features(sentence))
@@ -290,13 +294,18 @@ class SentenceClassifier(object):
    def classifyParagraph(self, p):
       rating = 0
       total = 0
+      snum = 0
       sentence = []
       counts = {}
       for word in p:
          sentence.append(word)
          if isEndOfSentence(word):
-            rating += self.classify(sentence)
-            total += 1
+            w = 1
+            if snum == 0:
+               w = 2
+            snum += 1
+            rating += self.classify(sentence)*w
+            total += w
             sentence = []
       if total < 1:
          return 4
@@ -331,12 +340,12 @@ class SentenceClassifier(object):
       lsentiWords = [stem(word.lower()) for word in sentence if sentiment(word) < 0]
       hsentiWords = [stem(word.lower()) for word in sentence if sentiment(word) > 0]
 
-      fs['low senti'] = int(len(lsentiWords)/2)
-      fs['high senti'] = int(len(hsentiWords)/2)
-      fs['words'] = int(len(sentence)/4)
+      # fs['low senti'] = int(len(lsentiWords)/2 + .5)
+      # fs['high senti'] = int(len(hsentiWords)/2 + .5)
+      fs['words'] = int(len(sentence)/4 + .5)
       fs['unigram rating'] = int(4*self.uclassifier.classifyParagraph(sentence)+0.5)
 
-      #addKeysToDict(posWords,fs)
+      addKeysToDict(posWords,fs)
       
       #addKeysToDict(lsentiWords, fs, 'low sentiment')
       #addKeysToDict(hsentiWords, fs, 'high sentiment')      
