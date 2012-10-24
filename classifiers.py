@@ -417,14 +417,12 @@ class ParagraphClassifier(object):
             fs[w] = 1
       return fs #{'first word':paragraph[0]}
 
+
 class CharacterNgramClassifier(object):
    """Paragraph Classifier - accepts data in the (rating, list of words) format"""
    def __init__(self, authors):
       self.authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
       self.featureSets = CharacterNgramClassifier.featureSets(authors)
-      #self.classifier = nltk.NaiveBayesClassifier.train(self.featureSets)
-      #self.classifier = nltk.DecisionTreeClassifier.train(self.featureSets)
-      self.classifier = nltk.MaxentClassifier.train(self.featureSets, trace = 1)
 
    def classify(self, review):
       trigrams = []
@@ -432,7 +430,6 @@ class CharacterNgramClassifier(object):
          trigrams.extend(nltk.trigrams(re.sub("[^a-z]", "", "".join(p).lower())))
       trigrams = ["".join(t) for t in trigrams]
 
-      #nick_profile = self.authorProfiles['Nick Feeney']
       test_profile = CharacterNgramClassifier.__getNormalizedTrigramFreq(trigrams)
 
       result_dict = {}
@@ -443,7 +440,7 @@ class CharacterNgramClassifier(object):
             fa = test_profile[tri]
             fb = profile.get(tri, 0)
             dissimilarity += math.pow(((2 * (fa - fb)) / (fa + fb)), 2) / (4 * len(trigrams))
-         similarity = 1 - dissimilarity
+         similarity = 1 - (dissimilarity * 1.8)
          result_dict[name] = similarity
       return result_dict
 
@@ -474,18 +471,11 @@ class CharacterNgramClassifier(object):
       triFreq = nltk.FreqDist(trigrams)
 
       tri_dict = {}
-      for t in triFreq.keys()[:100]:
+      for t in triFreq.keys()[:300]:
          tri_dict[t] = triFreq.freq(t)
       return tri_dict
-      #return {t: float(tri_dict[t])/len(trigams) for t in tri_dict}
 
    @staticmethod
-   def featureSets(authors): #data accepted as (rating, list of words)
+   def featureSets(authors): #data returned as (rating, list of words)
       authorProfiles = CharacterNgramClassifier.__getAuthorProfiles(authors)
-      # print [(v, k) for (k, v) in authorProfiles.iteritems()]
       return [(v, k) for (k, v) in authorProfiles.iteritems()]
-
-   @staticmethod
-   def features(paragraph):
-      #for word in paragraph for letter in word
-      return {'feature': ' '}

@@ -11,24 +11,6 @@ def main():
 
    train, tests = getData()
 
-   # tests[2 - 1].reviewer = "Devlin Cronin"
-   # tests[3 - 1].reviewer = "Mike Buerli"
-   # tests[6 - 1].reviewer = "Brett Armstrong"
-   # tests[7 - 1].reviewer = "Steffen Lyngbaek"
-   # tests[8 - 1].reviewer = "Ryan Verdon"
-   # tests[9 - 1].reviewer = "Andrew Sinclair"
-
-   # tests[2 - 1].ratings = [3,2,3,3]
-   # tests[3 - 1].ratings = [4,5,5,4]
-   # tests[6 - 1].ratings = [4,5,4,4]
-   # tests[7 - 1].ratings = [3,4,3,3]
-   # tests[8 - 1].ratings = [5,5,4,4]
-   # tests[9 - 1].ratings = [4,4,5,4]
-
-   # tests.pop(4)
-   # tests.pop(3)
-   # tests.pop(0)
-
    exercise1(train)
    exercise2(train)
    exercise34(train)
@@ -80,9 +62,7 @@ def exercise34(data):
 
 def makePredictions(train, tests):
 
-#[NAME OF FILE], [PARAGRAPH PREDICTIONS 1-4], [OVERALL RATING PREDICTION], [AUTHOR PREDICTION] [NEWLINE]
    outfp = open("predictions.txt", 'w')
-
 
    authorClassifier = CharacterNgramClassifier(getAllAuthors(train))
    paragraphClassifier = BrettClassifier(getAllParagraphs(train))
@@ -146,15 +126,9 @@ def isAuthorInList(author, list):
 
 def classifyAuthors(testData, trainingData, sim_matrix, labels):
    print 'Training Classifier'
-   
-   # for author in trainingData.keys():
-   #    if not author in testData.keys():
-   #       del trainingData[author]
-
    classifier = CharacterNgramClassifier(trainingData)
    correct = 0
    totalerror = 0
-
    
    for author in testData.keys():
       results = classifier.classify(testData[author])
@@ -164,7 +138,7 @@ def classifyAuthors(testData, trainingData, sim_matrix, labels):
          if value == results[author]:
             rating = num
             break;
-      print "Guess: ",'%.3f' % results[guess],'%26s' % guess, " Actual: ", '%.3f' % results[author], author, rating
+      print "Guess: ", '%-26s' % guess, '%.3f' % results[guess], " Actual:", '%.3f ' % results[author], author, rating
       if guess != author:
          totalerror += 1
       if guess == author:
@@ -241,12 +215,12 @@ def classifyParagraphs(testData, trainingData):
    return rms
 
 def printMatrix(matrix, isFloat):
-   print "%7s" % "", ''.join(['%7s' % (i + 1) for i in range(len(matrix))])
+   print "%5s" % "", ''.join(['%5s' % (i + 1) for i in range(len(matrix))])
    for i in range(len(matrix)):
-      formatString = '%7s'
+      formatString = '%5s'
       if isFloat:
-         formatString = '%7.3f'
-      print '%7s' % (i + 1), ''.join([formatString % val for val in matrix[i]])
+         formatString = '%5.2f'
+      print '%5s' % (i + 1), ''.join([formatString % val for val in matrix[i]])
 
 if __name__ == '__main__':
    main()
